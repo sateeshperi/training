@@ -99,7 +99,33 @@ nextflow_process {
 }
 ```
 
-* This will create a snapshot of all the output channels, which in this case is the bam file produced containing the MD5SUM
+* run the test
+
+```bash
+nf-test test modules/local/samtools/index/tests/main.nf.test
+```
+
+
+```bash
+🚀 nf-test 0.8.4
+https://code.askimed.com/nf-test
+(c) 2021 - 2024 Lukas Forer and Sebastian Schoenherr
+
+
+Test Process SAMTOOLS_INDEX
+
+  Test [bc664c47] 'reads_son [bam]' PASSED (9.087s)
+  Snapshots:
+    1 created [reads_son [bam]]
+
+
+Snapshot Summary:
+  1 created
+
+SUCCESS: Executed 1 tests in 9.095s
+```
+
+* This will create a snapshot `main.nf.test` of all the output channels, which in this case is the bam file produced containing the MD5SUM
 
 ```groovy
 {
@@ -198,26 +224,6 @@ nextflow_process {
 }
 ```
 
-```bash
-🚀 nf-test 0.8.4
-https://code.askimed.com/nf-test
-(c) 2021 - 2024 Lukas Forer and Sebastian Schoenherr
-
-
-Test Process SAMTOOLS_INDEX
-
-  Test [bc664c47] 'reads_son [bam]' PASSED (9.087s)
-  Snapshots:
-    1 created [reads_son [bam]]
-
-
-Snapshot Summary:
-  1 created
-
-SUCCESS: Executed 1 tests in 9.095s
-```
-
-
 * Now let's re-run with mother and father tests included in the same file and use the parameter `--update-snpashot` to add those entries to the snapshot
 
 ```bash
@@ -242,4 +248,69 @@ Test Process SAMTOOLS_INDEX
 
 Snapshot Summary:
   2 created
+```
+
+```groovy
+{
+    "reads_father [bam]": {
+        "content": [
+            {
+                "0": [
+                    [
+                        {
+                            "id": "NA12877"
+                        },
+                        "reads_father.bam:md5,961b7b7c7d8945ff0d93861d18610a83",
+                        "reads_father.bam.bai:md5,0415dc1de5f798f398322fa84a1bd403"
+                    ]
+                ]
+            }
+        ],
+        "meta": {
+            "nf-test": "0.8.4",
+            "nextflow": "24.02.0"
+        },
+        "timestamp": "2024-04-18T20:09:09.800402231"
+    },
+    "reads_son [bam]": {
+        "content": [
+            {
+                "0": [
+                    [
+                        {
+                            "id": "NA12882"
+                        },
+                        "reads_son.bam:md5,12e4f6133168de9441cd679347ed249b",
+                        "reads_son.bam.bai:md5,ac1eb007b3c187783b0f3a70044930b9"
+                    ]
+                ]
+            }
+        ],
+        "meta": {
+            "nf-test": "0.8.4",
+            "nextflow": "24.02.0"
+        },
+        "timestamp": "2024-04-18T20:03:35.18709459"
+    },
+    "reads_mother [bam]": {
+        "content": [
+            {
+                "0": [
+                    [
+                        {
+                            "id": "NA12878"
+                        },
+                        "reads_mother.bam:md5,e6c1fc44bd6831a8b0c532c5d824931c",
+                        "reads_mother.bam.bai:md5,e67e4b0277dddeacb0a5016e41f19832"
+                    ]
+                ]
+            }
+        ],
+        "meta": {
+            "nf-test": "0.8.4",
+            "nextflow": "24.02.0"
+        },
+        "timestamp": "2024-04-18T20:09:00.269007074"
+    }
+}
 ```
