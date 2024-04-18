@@ -314,3 +314,310 @@ Snapshot Summary:
     }
 }
 ```
+
+----
+
+## GATK_HAPLOTYPECALLER
+
+* GATK_HAPLOTYPECALLER is an example of what we called as a chained module i.e., it requires the output of another module as one of its inputs. nf-test offers a [setup method](https://www.nf-test.com/docs/testcases/setup/) to facilitate this
+
+```groovy
+nextflow_process {
+
+    name "Test Process GATK_HAPLOTYPECALLER"
+    script "../main.nf"
+    process "GATK_HAPLOTYPECALLER"
+
+    test("reads_son [bam]") {
+
+        setup {
+            run("SAMTOOLS_INDEX") {
+                script "../../../samtools/index/main.nf"
+                process {
+                    """
+                    input[0] =  [ [id: 'NA12882' ], file("/workspace/gitpod/hello-nextflow/data/bam/reads_son.bam") ]
+                    """
+                }
+            }
+        }
+
+        when {
+            params {
+                outdir = "tests/results"
+            }
+            process {
+                """
+                input[0] = SAMTOOLS_INDEX.out
+                input[1] = file("${baseDir}/data/ref/ref.fasta")
+                input[2] = file("${baseDir}/data/ref/ref.fasta.fai")
+                input[3] = file("${baseDir}/data/ref/ref.dict")
+                input[4] = file("${baseDir}/data/intervals.list")
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert snapshot(process.out).match()
+        }
+
+    }
+
+}
+```
+
+```bash
+🚀 nf-test 0.8.4
+https://code.askimed.com/nf-test
+(c) 2021 - 2024 Lukas Forer and Sebastian Schoenherr
+
+
+Test Process GATK_HAPLOTYPECALLER
+
+  Test [86fd1bce] 'reads_son [bam]' PASSED (19.85s)
+  Snapshots:
+    1 created [reads_son [bam]]
+
+
+Snapshot Summary:
+  1 created
+
+SUCCESS: Executed 1 tests in 19.856s
+```
+
+```bash
+{
+    "reads_son [bam]": {
+        "content": [
+            {
+                "0": [
+                    [
+                        {
+                            "id": "NA12882"
+                        },
+                        "reads_son.bam.g.vcf:md5,4e654c01f693ab277af6f7d6fd6c4ad3",
+                        "reads_son.bam.g.vcf.idx:md5,a5e85607b3bce15046221f578ee6579d"
+                    ]
+                ]
+            }
+        ],
+        "meta": {
+            "nf-test": "0.8.4",
+            "nextflow": "24.02.0"
+        },
+        "timestamp": "2024-04-18T20:50:15.127723888"
+    }
+}
+```
+
+* now add in tests for the other two inputs
+
+```groovy
+nextflow_process {
+
+    name "Test Process GATK_HAPLOTYPECALLER"
+    script "../main.nf"
+    process "GATK_HAPLOTYPECALLER"
+
+    test("reads_son [bam]") {
+
+        setup {
+            run("SAMTOOLS_INDEX") {
+                script "../../../samtools/index/main.nf"
+                process {
+                    """
+                    input[0] =  [ [id: 'NA12882' ], file("/workspace/gitpod/hello-nextflow/data/bam/reads_son.bam") ]
+                    """
+                }
+            }
+        }
+
+        when {
+            params {
+                outdir = "tests/results"
+            }
+            process {
+                """
+                input[0] = SAMTOOLS_INDEX.out
+                input[1] = file("${baseDir}/data/ref/ref.fasta")
+                input[2] = file("${baseDir}/data/ref/ref.fasta.fai")
+                input[3] = file("${baseDir}/data/ref/ref.dict")
+                input[4] = file("${baseDir}/data/intervals.list")
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert snapshot(process.out).match()
+        }
+
+    }
+
+    test("reads_mother [bam]") {
+
+        setup {
+            run("SAMTOOLS_INDEX") {
+                script "../../../samtools/index/main.nf"
+                process {
+                    """
+                    input[0] = [ [id: 'NA12878' ], file("/workspace/gitpod/hello-nextflow/data/bam/reads_mother.bam") ]
+                    """
+                }
+            }
+        }
+
+        when {
+            params {
+                outdir = "tests/results"
+            }
+            process {
+                """
+                input[0] = SAMTOOLS_INDEX.out
+                input[1] = file("${baseDir}/data/ref/ref.fasta")
+                input[2] = file("${baseDir}/data/ref/ref.fasta.fai")
+                input[3] = file("${baseDir}/data/ref/ref.dict")
+                input[4] = file("${baseDir}/data/intervals.list")
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert snapshot(process.out).match()
+        }
+
+    }
+
+    test("reads_father [bam]") {
+
+        setup {
+            run("SAMTOOLS_INDEX") {
+                script "../../../samtools/index/main.nf"
+                process {
+                    """
+                    input[0] = [ [id: 'NA12877' ], file("/workspace/gitpod/hello-nextflow/data/bam/reads_father.bam") ]
+                    """
+                }
+            }
+        }
+
+        when {
+            params {
+                outdir = "tests/results"
+            }
+            process {
+                """
+                input[0] = SAMTOOLS_INDEX.out
+                input[1] = file("${baseDir}/data/ref/ref.fasta")
+                input[2] = file("${baseDir}/data/ref/ref.fasta.fai")
+                input[3] = file("${baseDir}/data/ref/ref.dict")
+                input[4] = file("${baseDir}/data/intervals.list")
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert snapshot(process.out).match()
+        }
+
+    }
+
+}
+```
+
+* `--update-snapshot`
+
+```bash
+nf-test test modules/local/gatk/haplotypecaller/tests/main.nf.test --update-snapshot
+```
+
+```bash
+🚀 nf-test 0.8.4
+https://code.askimed.com/nf-test
+(c) 2021 - 2024 Lukas Forer and Sebastian Schoenherr
+
+Warning: every snapshot that fails during this test run is re-record.
+
+Test Process GATK_HAPLOTYPECALLER
+
+  Test [86fd1bce] 'reads_son [bam]' PASSED (18.731s)
+  Test [547788fd] 'reads_mother [bam]' PASSED (19.497s)
+  Test [be786719] 'reads_father [bam]' PASSED (18.164s)
+  Snapshots:
+    1 updated [reads_son [bam]]
+    2 created [reads_father [bam], reads_mother [bam]]
+
+
+Snapshot Summary:
+  1 updated
+  2 created
+
+SUCCESS: Executed 3 tests in 56.404s
+```
+
+```groovy
+{
+    "reads_father [bam]": {
+        "content": [
+            {
+                "0": [
+                    [
+                        {
+                            "id": "NA12877"
+                        },
+                        "reads_father.bam.g.vcf:md5,dafb8478c3fe7fd436d152218f0435a5",
+                        "reads_father.bam.g.vcf.idx:md5,b3ac7efdb22e113fa88c90f8a91e790a"
+                    ]
+                ]
+            }
+        ],
+        "meta": {
+            "nf-test": "0.8.4",
+            "nextflow": "24.02.0"
+        },
+        "timestamp": "2024-04-18T20:57:40.602376102"
+    },
+    "reads_son [bam]": {
+        "content": [
+            {
+                "0": [
+                    [
+                        {
+                            "id": "NA12882"
+                        },
+                        "reads_son.bam.g.vcf:md5,96594b152dd3ed9a0a672bca305e1ae6",
+                        "reads_son.bam.g.vcf.idx:md5,09bcb5615dfaab274d9632b689b2ed83"
+                    ]
+                ]
+            }
+        ],
+        "meta": {
+            "nf-test": "0.8.4",
+            "nextflow": "24.02.0"
+        },
+        "timestamp": "2024-04-18T20:57:02.95077265"
+    },
+    "reads_mother [bam]": {
+        "content": [
+            {
+                "0": [
+                    [
+                        {
+                            "id": "NA12878"
+                        },
+                        "reads_mother.bam.g.vcf:md5,f386344bddd5c19bc87f6b32f2343bc3",
+                        "reads_mother.bam.g.vcf.idx:md5,3c0992912535547bf29093c220645d1a"
+                    ]
+                ]
+            }
+        ],
+        "meta": {
+            "nf-test": "0.8.4",
+            "nextflow": "24.02.0"
+        },
+        "timestamp": "2024-04-18T20:57:22.446445773"
+    }
+}
+```
