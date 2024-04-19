@@ -586,6 +586,7 @@ nextflow_process {
     }
 
 }
+
 ```
 
 ```bash
@@ -601,9 +602,9 @@ https://code.askimed.com/nf-test
 
 Test Process GATK_JOINTGENOTYPING
 
-  Test [24c3cb4b] 'family_trio [vcf] [idx]' PASSED (17.739s)
+  Test [24c3cb4b] 'family_trio [vcf] [idx]' PASSED (18.915s)
 
 
-SUCCESS: Executed 1 tests in 17.745s
+SUCCESS: Executed 1 tests in 18.921s
 ```
 
