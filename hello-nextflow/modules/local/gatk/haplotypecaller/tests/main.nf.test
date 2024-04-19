@@ -34,9 +34,9 @@ nextflow_process {
 
         then {
             assert process.success
-            assert snapshot(process.out).match()
+            assert path(process.out[0][0][1]).readLines().contains('#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NA12882')
+            assert path(process.out[0][0][1]).readLines().contains('20	10040001	.	T	<NON_REF>	.	.	END=10040048	GT:DP:GQ:MIN_DP:PL	0/0:40:99:37:0,99,1150')
         }
-
     }
 
     test("reads_mother [bam]") {
@@ -46,7 +46,7 @@ nextflow_process {
                 script "../../../samtools/index/main.nf"
                 process {
                     """
-                    input[0] = [ [id: 'NA12878' ], file("/workspace/gitpod/hello-nextflow/data/bam/reads_mother.bam") ]
+                    input[0] =  [ [id: 'NA12882' ], file("/workspace/gitpod/hello-nextflow/data/bam/reads_mother.bam") ]
                     """
                 }
             }
@@ -69,9 +69,9 @@ nextflow_process {
 
         then {
             assert process.success
-            assert snapshot(process.out).match()
+            assert path(process.out[0][0][1]).readLines().contains('#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NA12878')
+            assert path(process.out[0][0][1]).readLines().contains('20	10040001	.	T	<NON_REF>	.	.	END=10040013	GT:DP:GQ:MIN_DP:PL	0/0:28:81:27:0,81,829')
         }
-
     }
 
     test("reads_father [bam]") {
@@ -81,7 +81,7 @@ nextflow_process {
                 script "../../../samtools/index/main.nf"
                 process {
                     """
-                    input[0] = [ [id: 'NA12877' ], file("/workspace/gitpod/hello-nextflow/data/bam/reads_father.bam") ]
+                    input[0] =  [ [id: 'NA12882' ], file("/workspace/gitpod/hello-nextflow/data/bam/reads_father.bam") ]
                     """
                 }
             }
@@ -104,9 +104,9 @@ nextflow_process {
 
         then {
             assert process.success
-            assert snapshot(process.out).match()
+            assert path(process.out[0][0][1]).readLines().contains('#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NA12877')
+            assert path(process.out[0][0][1]).readLines().contains('20	10040001	.	T	<NON_REF>	.	.	END=10040011	GT:DP:GQ:MIN_DP:PL	0/0:30:81:29:0,81,1025')
         }
-
     }
 
 }

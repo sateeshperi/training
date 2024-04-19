@@ -1,7 +1,7 @@
 # hello-nf-test
 
 
-Now that you have a functioning workflow let's discuss about making this pipeline more modular usig Nextflow's DSL2 & adding unit-tests to your pipeline.
+* Now that you have a functioning workflow let's explore further about making this pipeline more modular using Nextflow's DSL2 & adding unit-tests to your pipeline using nf-test.
 
 
 ```bash
@@ -17,7 +17,7 @@ touch modules/local/gatk/haplotypecaller/main.nf
 touch modules/local/gatk/jointgenotyping/main.nf
 ```
 
-```
+---
 
 * Copy each process block into their respective `main.nf` files.
 
@@ -31,7 +31,7 @@ include { GATK_HAPLOTYPECALLER } from './modules/local/gatk/haplotypecaller/main
 include { GATK_JOINTGENOTYPING } from './modules/local/gatk/jointgenotyping/main.nf'
 ```
 
-* Should work the same now...give it a try!
+* Should work just the same as before now...give it a try!
 
 ---
 
@@ -67,7 +67,7 @@ mv /workspace/gitpod/hello-nextflow/tests/modules/local/gatk/haplotypecaller/mai
 mv /workspace/gitpod/hello-nextflow/tests/modules/local/gatk/jointgenotyping/main.nf.test modules/local/gatk/jointgenotyping/tests/
 ```
 
-* Let's work on samtools index first. Start by replacing the absolute path in the `script` section to relative path now
+* Let's work on samtools/index first. Start by replacing the absolute path in the `script` section to relative path `../main.nf` now and provides inputs in the `then` block with positional inputs `input[0]`
 
 ```groovy
 nextflow_process {
@@ -125,7 +125,7 @@ Snapshot Summary:
 SUCCESS: Executed 1 tests in 9.095s
 ```
 
-* This will create a snapshot `main.nf.test` of all the output channels, which in this case is the bam file produced containing the MD5SUM
+* This will create a snapshot `main.nf.test.snap` capturing all the output channels and the MD5SUM's of all elements
 
 ```groovy
 {
@@ -224,7 +224,7 @@ nextflow_process {
 }
 ```
 
-* Now let's re-run with mother and father tests included in the same file and use the parameter `--update-snpashot` to add those entries to the snapshot
+* Now let's re-run with mother and father tests included in the same file and use the parameter `--update-snapshot` to add those entries to the snapshot
 
 ```bash
 nf-test test modules/local/samtools/index/tests/main.nf.test --update-snapshot
@@ -315,11 +315,13 @@ Snapshot Summary:
 }
 ```
 
-----
+--------------------------------------------------------------------------------------------------------------------------------------------
+## GATK_HAPLOTYPECALLER Module Tests
+--------------------------------------------------------------------------------------------------------------------------------------------
 
-## GATK_HAPLOTYPECALLER
+* `GATK_HAPLOTYPECALLER` module is an example of what we called as a chained module i.e., it requires the output of another module as one of it's inputs. nf-test offers a [setup method](https://www.nf-test.com/docs/testcases/setup/) to facilitate this
 
-* GATK_HAPLOTYPECALLER is an example of what we called as a chained module i.e., it requires the output of another module as one of its inputs. nf-test offers a [setup method](https://www.nf-test.com/docs/testcases/setup/) to facilitate this
+* Update the `main.nf` of `modules/local/gatk/haplotypecaller` to below
 
 ```groovy
 nextflow_process {
@@ -364,6 +366,12 @@ nextflow_process {
     }
 
 }
+```
+
+* Run test
+
+```bash
+nf-test test modules/local/gatk/haplotypecaller/tests/main.nf.test
 ```
 
 ```bash
@@ -385,32 +393,11 @@ Snapshot Summary:
 SUCCESS: Executed 1 tests in 19.856s
 ```
 
-```bash
-{
-    "reads_son [bam]": {
-        "content": [
-            {
-                "0": [
-                    [
-                        {
-                            "id": "NA12882"
-                        },
-                        "reads_son.bam.g.vcf:md5,4e654c01f693ab277af6f7d6fd6c4ad3",
-                        "reads_son.bam.g.vcf.idx:md5,a5e85607b3bce15046221f578ee6579d"
-                    ]
-                ]
-            }
-        ],
-        "meta": {
-            "nf-test": "0.8.4",
-            "nextflow": "24.02.0"
-        },
-        "timestamp": "2024-04-18T20:50:15.127723888"
-    }
-}
-```
+* Now if you run the test again, you will see that the test fails with differing md5sum on the vcf file. This is expected currently for vcf/bam files due to their non-deterministic nature
 
-* now add in tests for the other two inputs
+* Instead we will employ other ways of output assertions, in this case - read the lines of vcf file and check for existence of specific contents in the vcf file
+
+* Now lets run tests for all three inputs
 
 ```groovy
 nextflow_process {
@@ -449,9 +436,9 @@ nextflow_process {
 
         then {
             assert process.success
-            assert snapshot(process.out).match()
+            assert path(process.out[0][0][1]).readLines().contains('#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NA12882')
+            assert path(process.out[0][0][1]).readLines().contains('20	10040001	.	T	<NON_REF>	.	.	END=10040048	GT:DP:GQ:MIN_DP:PL	0/0:40:99:37:0,99,1150')
         }
-
     }
 
     test("reads_mother [bam]") {
@@ -461,7 +448,7 @@ nextflow_process {
                 script "../../../samtools/index/main.nf"
                 process {
                     """
-                    input[0] = [ [id: 'NA12878' ], file("/workspace/gitpod/hello-nextflow/data/bam/reads_mother.bam") ]
+                    input[0] =  [ [id: 'NA12882' ], file("/workspace/gitpod/hello-nextflow/data/bam/reads_mother.bam") ]
                     """
                 }
             }
@@ -484,9 +471,9 @@ nextflow_process {
 
         then {
             assert process.success
-            assert snapshot(process.out).match()
+            assert path(process.out[0][0][1]).readLines().contains('#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NA12878')
+            assert path(process.out[0][0][1]).readLines().contains('20	10040001	.	T	<NON_REF>	.	.	END=10040013	GT:DP:GQ:MIN_DP:PL	0/0:28:81:27:0,81,829')
         }
-
     }
 
     test("reads_father [bam]") {
@@ -496,7 +483,7 @@ nextflow_process {
                 script "../../../samtools/index/main.nf"
                 process {
                     """
-                    input[0] = [ [id: 'NA12877' ], file("/workspace/gitpod/hello-nextflow/data/bam/reads_father.bam") ]
+                    input[0] =  [ [id: 'NA12882' ], file("/workspace/gitpod/hello-nextflow/data/bam/reads_father.bam") ]
                     """
                 }
             }
@@ -519,7 +506,81 @@ nextflow_process {
 
         then {
             assert process.success
-            assert snapshot(process.out).match()
+            assert path(process.out[0][0][1]).readLines().contains('#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NA12877')
+            assert path(process.out[0][0][1]).readLines().contains('20	10040001	.	T	<NON_REF>	.	.	END=10040011	GT:DP:GQ:MIN_DP:PL	0/0:30:81:29:0,81,1025')
+        }
+    }
+
+}
+```
+
+
+```bash
+🚀 nf-test 0.8.4
+https://code.askimed.com/nf-test
+(c) 2021 - 2024 Lukas Forer and Sebastian Schoenherr
+
+
+Test Process GATK_HAPLOTYPECALLER
+
+  Test [86fd1bce] 'reads_son [bam]' PASSED (24.651s)
+  Test [547788fd] 'reads_mother [bam]' PASSED (25.198s)
+  Test [be786719] 'reads_father [bam]' PASSED (31.084s)
+
+
+SUCCESS: Executed 3 tests in 80.942s
+```
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+## GATK_JOINTGENOTYPING
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+* We are going to use an example here of using local inputs for a module test
+
+```bash
+modules/local/gatk/jointgenotyping/tests/inputs/
+├── family_trio_map.tsv
+├── reads_father.bam.g.vcf
+├── reads_father.bam.g.vcf.idx
+├── reads_mother.bam.g.vcf
+├── reads_mother.bam.g.vcf.idx
+├── reads_son.bam.g.vcf
+└── reads_son.bam.g.vcf.idx
+```
+
+* main.nf.test
+
+```groovy
+nextflow_process {
+
+    name "Test Process GATK_JOINTGENOTYPING"
+    script "../main.nf"
+    process "GATK_JOINTGENOTYPING"
+
+    test("family_trio [vcf] [idx]") {
+
+        when {
+            params {
+                outdir = "tests/results"
+            }
+            process {
+                """
+                input[0] = file("${baseDir}/modules/local/gatk/jointgenotyping/tests/inputs/family_trio_map.tsv")
+                input[1] = "family_trio"
+                input[2] = file("${baseDir}/data/ref/ref.fasta")
+                input[3] = file("${baseDir}/data/ref/ref.fasta.fai")
+                input[4] = file("${baseDir}/data/ref/ref.dict")
+                input[5] = file("${baseDir}/data/intervals.list")
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert path(process.out[0][0]).readLines().contains('#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NA12877	NA12878	NA12882')
+            assert path(process.out[0][0]).readLines().contains('20	10040772	.	C	CT	1568.89	.	AC=5;AF=0.833;AN=6;BaseQRankSum=0.399;DP=82;ExcessHet=0.0000;FS=4.291;MLEAC=5;MLEAF=0.833;MQ=60.00;MQRankSum=0.00;QD=21.79;ReadPosRankSum=-9.150e-01;SOR=0.510	GT:AD:DP:GQ:PL	0/1:14,16:30:99:370,0,348	1/1:0,17:17:51:487,51,0	1/1:0,25:25:75:726,75,0')
         }
 
     }
@@ -527,97 +588,22 @@ nextflow_process {
 }
 ```
 
-* `--update-snapshot`
-
 ```bash
-nf-test test modules/local/gatk/haplotypecaller/tests/main.nf.test --update-snapshot
+nf-test test modules/local/gatk/jointgenotyping/tests/main.nf.test
 ```
+
 
 ```bash
 🚀 nf-test 0.8.4
 https://code.askimed.com/nf-test
 (c) 2021 - 2024 Lukas Forer and Sebastian Schoenherr
 
-Warning: every snapshot that fails during this test run is re-record.
 
-Test Process GATK_HAPLOTYPECALLER
+Test Process GATK_JOINTGENOTYPING
 
-  Test [86fd1bce] 'reads_son [bam]' PASSED (18.731s)
-  Test [547788fd] 'reads_mother [bam]' PASSED (19.497s)
-  Test [be786719] 'reads_father [bam]' PASSED (18.164s)
-  Snapshots:
-    1 updated [reads_son [bam]]
-    2 created [reads_father [bam], reads_mother [bam]]
+  Test [24c3cb4b] 'family_trio [vcf] [idx]' PASSED (17.739s)
 
 
-Snapshot Summary:
-  1 updated
-  2 created
-
-SUCCESS: Executed 3 tests in 56.404s
+SUCCESS: Executed 1 tests in 17.745s
 ```
 
-```groovy
-{
-    "reads_father [bam]": {
-        "content": [
-            {
-                "0": [
-                    [
-                        {
-                            "id": "NA12877"
-                        },
-                        "reads_father.bam.g.vcf:md5,dafb8478c3fe7fd436d152218f0435a5",
-                        "reads_father.bam.g.vcf.idx:md5,b3ac7efdb22e113fa88c90f8a91e790a"
-                    ]
-                ]
-            }
-        ],
-        "meta": {
-            "nf-test": "0.8.4",
-            "nextflow": "24.02.0"
-        },
-        "timestamp": "2024-04-18T20:57:40.602376102"
-    },
-    "reads_son [bam]": {
-        "content": [
-            {
-                "0": [
-                    [
-                        {
-                            "id": "NA12882"
-                        },
-                        "reads_son.bam.g.vcf:md5,96594b152dd3ed9a0a672bca305e1ae6",
-                        "reads_son.bam.g.vcf.idx:md5,09bcb5615dfaab274d9632b689b2ed83"
-                    ]
-                ]
-            }
-        ],
-        "meta": {
-            "nf-test": "0.8.4",
-            "nextflow": "24.02.0"
-        },
-        "timestamp": "2024-04-18T20:57:02.95077265"
-    },
-    "reads_mother [bam]": {
-        "content": [
-            {
-                "0": [
-                    [
-                        {
-                            "id": "NA12878"
-                        },
-                        "reads_mother.bam.g.vcf:md5,f386344bddd5c19bc87f6b32f2343bc3",
-                        "reads_mother.bam.g.vcf.idx:md5,3c0992912535547bf29093c220645d1a"
-                    ]
-                ]
-            }
-        ],
-        "meta": {
-            "nf-test": "0.8.4",
-            "nextflow": "24.02.0"
-        },
-        "timestamp": "2024-04-18T20:57:22.446445773"
-    }
-}
-```
