@@ -1,6 +1,8 @@
 # hello-nf-test
 
 
+## Switch to DSL2
+
 * Now that you have a functioning workflow let's explore further about making this pipeline more modular using Nextflow's DSL2 & adding unit-tests to your pipeline using nf-test.
 
 
@@ -33,9 +35,11 @@ include { GATK_JOINTGENOTYPING } from './modules/local/gatk/jointgenotyping/main
 
 * Should work just the same as before now...give it a try!
 
----
+----------------------------------------------------------------------------------------------------------------------
 
-* Next lets add some tests
+## Module nf-tests
+
+* Next lets add some tests. Read blogpost on [nf-test in nf-core](https://nextflow.io/blog/2024/nf-test-in-nf-core.html)
 
 * nf-test init
 
@@ -67,7 +71,7 @@ mv /workspace/gitpod/hello-nextflow/tests/modules/local/gatk/haplotypecaller/mai
 mv /workspace/gitpod/hello-nextflow/tests/modules/local/gatk/jointgenotyping/main.nf.test modules/local/gatk/jointgenotyping/tests/
 ```
 
-* Let's work on samtools/index first. Start by replacing the absolute path in the `script` section to relative path `../main.nf` now and provides inputs in the `then` block with positional inputs `input[0]`
+* Let's work on `samtools/index` first. Start by replacing the absolute path in the `script` section to relative path `../main.nf` now and provide inputs in the `then` block with positional inputs `input[0]`.
 
 ```groovy
 nextflow_process {
@@ -395,7 +399,7 @@ SUCCESS: Executed 1 tests in 19.856s
 
 * Now if you run the test again, you will see that the test fails with differing md5sum on the vcf file. This is expected currently for vcf/bam files due to their non-deterministic nature
 
-* Instead we will employ other ways of output assertions, in this case - read the lines of vcf file and check for existence of specific contents in the vcf file
+* Instead we will employ [other ways of output assertions](https://nf-co.re/docs/contributing/tutorials/nf-test_assertions), in this case - read the lines of vcf file and check for existence of specific lines in the vcf file
 
 * Now lets run tests for all three inputs
 
@@ -514,6 +518,9 @@ nextflow_process {
 }
 ```
 
+```bash
+nf-test test modules/local/gatk/haplotypecaller/tests/main.nf.test
+```
 
 ```bash
 🚀 nf-test 0.8.4
@@ -533,9 +540,8 @@ SUCCESS: Executed 3 tests in 80.942s
 
 --------------------------------------------------------------------------------------------------------------------------------------------
 
-## GATK_JOINTGENOTYPING
+## GATK_JOINTGENOTYPING Module Tests
 
---------------------------------------------------------------------------------------------------------------------------------------------
 
 * We are going to use an example here of using local inputs for a module test
 
