@@ -23,23 +23,88 @@ touch modules/local/gatk/jointgenotyping/main.nf
 
 * Copy each process block into their respective `main.nf` files.
 
-* Modify the `hello-gatk.nf` workflow to now have `include {}` statements for the three modules
+* Move all the parameter declarations from the `hello-gatk.nf` file to `nextflow.config` file
+
+```groovy
+/*
+ * Pipeline parameters
+ */
+
+// Execution environment setup
+params.baseDir = "/workspace/gitpod/hello-nextflow"
+$baseDir = params.baseDir
+
+
+// Primary input (samplesheet in CSV format with ID and file path, one sample per line)
+params.reads_bam = "${baseDir}/data/samplesheet.csv"
+
+// Base name for final output file
+params.cohort_name = "family_trio"
+
+// Accessory files
+params.genome_reference = "${baseDir}/data/ref/ref.fasta"
+params.genome_reference_index = "${baseDir}/data/ref/ref.fasta.fai"
+params.genome_reference_dict = "${baseDir}/data/ref/ref.dict"
+params.calling_intervals = "${baseDir}/data/intervals.list"
+```
+
+* Modify the `hello-gatk.nf` workflow to now have `include {}` statements for the three modules. Your `hello-gatk.nf` file should look as below
 
 ```bash
+
+
 // Include modules
 
 include { SAMTOOLS_INDEX } from './modules/local/samtools/index/main.nf'
 include { GATK_HAPLOTYPECALLER } from './modules/local/gatk/haplotypecaller/main.nf'
 include { GATK_JOINTGENOTYPING } from './modules/local/gatk/jointgenotyping/main.nf'
+
+workflow {
+
+    // Create input channel from samplesheet in CSV format
+    reads_ch = Channel.fromPath(params.reads_bam)
+                    .splitCsv(header: true)
+                    .map{row -> [row.id, file(row.reads_bam)]}
+
+    // Create index file for input BAM file
+    SAMTOOLS_INDEX(reads_ch)
+
+    // Call variants from the indexed BAM file
+GATK_HAPLOTYPECALLER(
+    SAMTOOLS_INDEX.out,
+    params.genome_reference,
+    params.genome_reference_index,
+    params.genome_reference_dict,
+    params.calling_intervals
+)
+
+// Create a sample map of the output GVCFs
+sample_map = GATK_HAPLOTYPECALLER.out.collectFile(){ id, gvcf, idx ->
+        ["${params.cohort_name}_map.tsv", "${id}\t${gvcf}\t${idx}\n"]
+}
+
+// Consolidate GVCFs and apply joint genotyping analysis
+GATK_JOINTGENOTYPING(
+    sample_map,
+    params.cohort_name,
+    params.genome_reference,
+    params.genome_reference_index,
+    params.genome_reference_dict,
+    params.calling_intervals
+)
+
+}
 ```
 
 * Should work just the same as before now...give it a try!
 
 ----------------------------------------------------------------------------------------------------------------------
 
-## Module nf-tests
+# nf-test
 
-* Next lets add some tests. Read blogpost on [nf-test in nf-core](https://nextflow.io/blog/2024/nf-test-in-nf-core.html)
+* Read blogpost on [nf-test in nf-core](https://nextflow.io/blog/2024/nf-test-in-nf-core.html)
+
+* We will be adding unit-tests for all the three modules and a pipeline level test for `hello-gatk.nf` 
 
 * nf-test init
 
@@ -54,6 +119,8 @@ https://code.askimed.com/nf-test
 
 Project configured. Configuration is stored in nf-test.config
 ```
+
+## Module nf-tests
 
 * nf-test generate process test files for modules
 
@@ -543,7 +610,7 @@ SUCCESS: Executed 3 tests in 80.942s
 ## GATK_JOINTGENOTYPING Module Tests
 
 
-* We are going to use an example here of using local inputs for a module test
+* We are going to use an example here of using local inputs for a module test (NOTE: you will need the following files in the directory mentioned below)
 
 ```bash
 modules/local/gatk/jointgenotyping/tests/inputs/
@@ -614,3 +681,34 @@ Test Process GATK_JOINTGENOTYPING
 SUCCESS: Executed 1 tests in 18.921s
 ```
 
+-------------------
+
+## Pipeline nf-test
+
+* Generate pipeline-level nf-test file
+
+```bash
+nf-test generate pipeline hello-gatk.nf
+```
+
+* The boiler-plate test file generated contains a `assert workflow.success` which can be used as the minimum unit-test to test the functioning of the pipeline
+
+```
+nf-test test tests/hello-gatk.nf.test
+```
+
+```bash
+ nf-test 0.8.4
+https://code.askimed.com/nf-test
+(c) 2021 - 2024 Lukas Forer and Sebastian Schoenherr
+
+
+Test Workflow hello-gatk.nf
+
+  Test [a78c9486] 'Should run without failures' PASSED (40.929s)
+
+
+SUCCESS: Executed 1 tests in 40.933s
+```
+
+* Add more appropriate assertions to the pipeline test file if needed
